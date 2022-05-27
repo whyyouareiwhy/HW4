@@ -1,3 +1,7 @@
+# Yuriy Alexander
+# CS410 Computers, Sound & Music
+# HW 4
+
 import numpy as np
 import scipy.fft
 import scipy.signal as sps
@@ -8,12 +12,9 @@ import random
 
 SAMPLERATE = 48000
 
-# TO-DO
-# ramp envelope
-
 
 def music_note(freq, amp, clip):
-    duration = 60.0 / options.bpm
+    duration = (60.0/options.bpm) * 0.95
     t = np.linspace(0, duration, int(duration * SAMPLERATE), False)
     sine_note = np.sin(freq * t * (2 * np.pi))
     audio = sine_note * (2 ** 15 - 1) / np.max(np.abs(sine_note))
@@ -21,13 +22,22 @@ def music_note(freq, amp, clip):
     # root note amplitude => [--accent] and non-root note => [--volume]
     audio *= (amp/10)
 
+    # My temporary (poor) attempt at reducing the popping sounds. Envelope needs
+    # to be implemented, but I just need to move on to other assignments.
+    if not clip:
+        filtered = audio
+        window = sps.windows.exponential(40 * options.ramp)
+        filtered = sps.convolve(audio, window, mode='same', method='auto') / window.size
+        filtered *= 4  # hackey way of equalizing the audio a little bit
+        filtered = filtered.astype(np.int16)
+        return filtered
+
     # Square the note if clip arg is True (for root note of each measure)
     if clip:
         audio = np.clip(audio, a_min=-8192, a_max=8192)
         wav.write('clipped.wav', SAMPLERATE, audio)  # for testing in Audacity
-
-    audio = audio.astype(np.int16)
-    return audio
+        audio = audio.astype(np.int16)
+        return audio
 
 
 # Play a given measure in order from C base note to next octave's C
